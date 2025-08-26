@@ -21,7 +21,7 @@ export async function createMuxLiveStream(): Promise<MuxLiveStream> {
       id: stream.id!,
       stream_key: stream.stream_key!,
       status: stream.status!,
-      playback_ids: stream.playback_ids?.map(p => ({
+      playback_ids: stream.playbook_ids?.map(p => ({
         id: p.id,
         policy: p.policy as 'public' | 'signed'
       })) || [],
@@ -43,7 +43,7 @@ export async function getMuxLiveStream(streamId: string): Promise<MuxLiveStream 
       id: stream.id!,
       stream_key: stream.stream_key!,
       status: stream.status!,
-      playback_ids: stream.playback_ids?.map(p => ({
+      playbook_ids: stream.playbook_ids?.map(p => ({
         id: p.id,
         policy: p.policy as 'public' | 'signed'
       })) || [],
@@ -76,7 +76,7 @@ export async function getMuxAsset(assetId: string): Promise<MuxAsset | null> {
       status: asset.status!,
       duration: asset.duration,
       max_resolution: asset.max_stored_resolution,
-      playback_ids: asset.playback_ids?.map(p => ({
+      playback_ids: asset.playbook_ids?.map(p => ({
         id: p.id,
         policy: p.policy as 'public' | 'signed'
       })) || []
@@ -101,7 +101,8 @@ export async function createAssetThumbnail(assetId: string): Promise<string | nu
 // Get live stream metrics
 export async function getLiveStreamMetrics(streamId: string) {
   try {
-    const metrics = await mux.data.metrics.breakdown(streamId, {
+    // Updated to use the correct Mux Data API structure
+    const metrics = await mux.data.metrics.get(streamId, {
       timeframe: ['24:hours'],
       metrics: ['video_startup_time', 'video_views', 'concurrent_viewers']
     });
@@ -120,7 +121,8 @@ export function validateMuxWebhookSignature(
   secret: string
 ): boolean {
   try {
-    return Mux.Webhooks.verifyHeader(payload, signature, secret);
+    // Updated to use the correct webhook verification method
+    return Mux.webhooks.verifySignature(payload, signature, secret);
   } catch (error) {
     console.error('Failed to validate webhook signature:', error);
     return false;
