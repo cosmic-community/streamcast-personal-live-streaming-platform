@@ -121,7 +121,7 @@ interface MuxWebhookEvent {
 }
 
 // Utility types
-type OptionalMetadata<T> = Partial<T['metadata']>;
+type OptionalMetadata<T extends CosmicObject> = Partial<T['metadata']>;
 type CreateStreamData = Omit<Stream, 'id' | 'created_at' | 'modified_at'>;
 
 // Type guards

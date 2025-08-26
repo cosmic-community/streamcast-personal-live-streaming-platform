@@ -13,7 +13,7 @@ export async function createMuxLiveStream(): Promise<MuxLiveStream> {
     const stream = await mux.video.liveStreams.create({
       playback_policy: ['public'],
       new_asset_settings: {
-        playbook_policy: ['public']
+        playback_policy: ['public']
       }
     });
 
@@ -21,7 +21,10 @@ export async function createMuxLiveStream(): Promise<MuxLiveStream> {
       id: stream.id!,
       stream_key: stream.stream_key!,
       status: stream.status!,
-      playback_ids: stream.playback_ids || [],
+      playback_ids: stream.playback_ids?.map(p => ({
+        id: p.id,
+        policy: p.policy as 'public' | 'signed'
+      })) || [],
       created_at: stream.created_at!,
       recent_asset_ids: stream.recent_asset_ids
     };
@@ -40,7 +43,10 @@ export async function getMuxLiveStream(streamId: string): Promise<MuxLiveStream 
       id: stream.id!,
       stream_key: stream.stream_key!,
       status: stream.status!,
-      playback_ids: stream.playback_ids || [],
+      playback_ids: stream.playback_ids?.map(p => ({
+        id: p.id,
+        policy: p.policy as 'public' | 'signed'
+      })) || [],
       created_at: stream.created_at!,
       recent_asset_ids: stream.recent_asset_ids
     };
@@ -53,7 +59,7 @@ export async function getMuxLiveStream(streamId: string): Promise<MuxLiveStream 
 // Delete a live stream
 export async function deleteMuxLiveStream(streamId: string): Promise<void> {
   try {
-    await mux.video.liveStreams.del(streamId);
+    await mux.video.liveStreams.delete(streamId);
   } catch (error) {
     console.error(`Failed to delete Mux live stream ${streamId}:`, error);
     throw new Error('Failed to delete live stream');
@@ -69,8 +75,11 @@ export async function getMuxAsset(assetId: string): Promise<MuxAsset | null> {
       id: asset.id!,
       status: asset.status!,
       duration: asset.duration,
-      max_resolution: asset.max_resolution,
-      playback_ids: asset.playbook_ids
+      max_resolution: asset.max_stored_resolution,
+      playback_ids: asset.playback_ids?.map(p => ({
+        id: p.id,
+        policy: p.policy as 'public' | 'signed'
+      })) || []
     };
   } catch (error) {
     console.error(`Failed to get Mux asset ${assetId}:`, error);
@@ -92,7 +101,7 @@ export async function createAssetThumbnail(assetId: string): Promise<string | nu
 // Get live stream metrics
 export async function getLiveStreamMetrics(streamId: string) {
   try {
-    const metrics = await mux.data.metrics.retrieve(streamId, {
+    const metrics = await mux.data.metrics.breakdown(streamId, {
       timeframe: ['24:hours'],
       metrics: ['video_startup_time', 'video_views', 'concurrent_viewers']
     });
@@ -111,7 +120,7 @@ export function validateMuxWebhookSignature(
   secret: string
 ): boolean {
   try {
-    return Mux.webhooks.verifyHeader(payload, signature, secret);
+    return Mux.Webhooks.verifyHeader(payload, signature, secret);
   } catch (error) {
     console.error('Failed to validate webhook signature:', error);
     return false;
